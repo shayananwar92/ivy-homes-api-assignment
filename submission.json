@@ -1,0 +1,159 @@
+{
+  "api_key": "IVY26-355F3CA5026E",
+  "candidate": {
+    "name": "Shayan Anwar",
+    "email": "shayananwar05@gmail.com",
+    "repo_url": "https://github.com/shayananwar92/ivy-homes-api-assignment",
+    "demo_url": "PASTE_YOUR_VERCEL_URL_HERE"
+  },
+  "answers": {
+    "total_listing_records": 4100,
+    "unique_properties": 50,
+    "active_listings": 3444,
+    "corrupt_listing_ids": [
+      "MAG-2002456"
+    ],
+    "total_monthly_rent": 10295100,
+    "avg_price_per_sqft_2bhk": 16170.34,
+    "costliest_project": {
+      "project_id": "P20027",
+      "price_max_inr": 96.8
+    },
+    "listings_last_7_days": 164,
+    "fake_listing_ids": [
+      "MAG-2002761"
+    ],
+    "projects_with_wrong_listing_count": 414
+  },
+  "findings": [
+    {
+      "endpoint": "*",
+      "category": "auth",
+      "documented": "The API key can be appended as the api_key query parameter.",
+      "actual": "The live API requires the API key in the X-API-Key request header.",
+      "how_found": "Compared requests made using the documented query parameter with authenticated requests accepted by the live service.",
+      "impact": "Requests using the documented key transport fail; the working frontend sends the key in the request header.",
+      "evidence": []
+    },
+    {
+      "endpoint": "*",
+      "category": "auth",
+      "documented": "The login response returns the session token under the key token.",
+      "actual": "The live login response returns the session token under access_token.",
+      "how_found": "Inspected the raw JSON returned by POST /auth/login.",
+      "impact": "Using token produces an undefined session token and prevents authenticated requests.",
+      "evidence": []
+    },
+    {
+      "endpoint": "*",
+      "category": "auth",
+      "documented": "Login sessions expire after 86400 seconds.",
+      "actual": "The live service uses an access-token lifetime of 900 seconds.",
+      "how_found": "Inspected the live authentication response and reproduced token expiry during testing.",
+      "impact": "The frontend must handle token expiration instead of assuming a 24-hour access token.",
+      "evidence": []
+    },
+    {
+      "endpoint": "*",
+      "category": "auth",
+      "documented": "There is no refresh flow.",
+      "actual": "The login response provides a refresh_token and refresh_url pointing to /auth/refresh.",
+      "how_found": "Inspected the raw login response and later observed the expired-token error directing the client to POST /auth/refresh.",
+      "impact": "The frontend must refresh expired access tokens to maintain a working session.",
+      "evidence": []
+    },
+    {
+      "endpoint": "/v1/listings",
+      "category": "duplicates",
+      "documented": "Every listing_id is globally unique and each listing corresponds to exactly one physical property.",
+      "actual": "4100 retrievable records collapse to 50 unique listing IDs/properties. The records are padded with repeated copies.",
+      "how_found": "Paged through the full dataset, then compared listing IDs and the latitude_longitude_floor composite property key.",
+      "impact": "Raw collection counts cannot be treated as counts of distinct properties.",
+      "evidence": [
+        "MAG-2001953",
+        "MAG-2000209",
+        "MAG-2003550",
+        "MAG-2000252",
+        "MAG-2002761"
+      ]
+    },
+    {
+      "endpoint": "/v1/listings",
+      "category": "completeness",
+      "documented": "Inactive, expired and withdrawn listings are excluded server side.",
+      "actual": "The endpoint returned 4100 records, of which only 3444 have is_live=true.",
+      "how_found": "Paged through all unfiltered listing records and counted is_live values.",
+      "impact": "The frontend and analysis must not assume every returned listing is active.",
+      "evidence": []
+    },
+    {
+      "endpoint": "*",
+      "category": "units",
+      "documented": "Monetary values are integer Indian rupees everywhere in the API.",
+      "actual": "Project price values are not integer absolute INR values; for example P20027 has price_max=96.8.",
+      "how_found": "Inspected project records and compared their values with the documented unit/type claim.",
+      "impact": "Project prices cannot safely be displayed as absolute rupees without accounting for the live representation.",
+      "evidence": [
+        "P20027"
+      ]
+    },
+    {
+      "endpoint": "/v1/projects",
+      "category": "consistency",
+      "documented": "project.total_listings always agrees with the listings available for that project.",
+      "actual": "414 projects have listing counts that disagree with the actual listing records.",
+      "how_found": "Grouped listing records by project_id and compared those counts with project.total_listings.",
+      "impact": "project.total_listings cannot be treated as a reliable representation of the current listing volume.",
+      "evidence": []
+    },
+    {
+      "endpoint": "/v1/listing/{id}",
+      "category": "missing_endpoint",
+      "documented": "A single listing is available at /v1/listing/{listing_id}.",
+      "actual": "The documented route returns HTTP 404 for valid listing IDs.",
+      "how_found": "Requested /v1/listing/MAG-2001953 while authenticated and received 404 Not Found.",
+      "impact": "The documented single-listing endpoint cannot be used by the frontend.",
+      "evidence": []
+    },
+    {
+      "endpoint": "/v1/analytics/summary",
+      "category": "missing_endpoint",
+      "documented": "The analytics summary endpoint provides pre-computed aggregates.",
+      "actual": "The documented endpoint returns HTTP 404 Not Found.",
+      "how_found": "Requested the documented endpoint while authenticated and received 404; the root-path variant /analytics/summary also returned 404.",
+      "impact": "The frontend calculates insights from working collection endpoints instead.",
+      "evidence": []
+    },
+    {
+      "endpoint": "/v1/favourites",
+      "category": "missing_endpoint",
+      "documented": "GET /v1/favourites returns the logged-in user's saved listings.",
+      "actual": "The documented GET endpoint returns HTTP 404 Not Found.",
+      "how_found": "Requested the documented favourites endpoint while authenticated through the frontend and observed 404 in the browser Network panel.",
+      "impact": "The documented favourites resource cannot currently be used as specified.",
+      "evidence": []
+    },
+    {
+      "endpoint": "/v1/listings",
+      "category": "data_quality",
+      "documented": "Listing records represent valid properties.",
+      "actual": "MAG-2002456 violates the geographic constraints of the Hyderabad-scoped dataset.",
+      "how_found": "Tested physical-area and floor constraints first; those produced no corrupt records. A Hyderabad geographic bounding-box check isolated MAG-2002456.",
+      "impact": "This listing should not be treated as a valid Hyderabad property.",
+      "evidence": [
+        "MAG-2002456"
+      ]
+    },
+    {
+      "endpoint": "/v1/listings",
+      "category": "fraud",
+      "documented": "Listings are genuine.",
+      "actual": "MAG-2002761 is a strong fake/lead-generation outlier: it is unverified and lists a 3 BHK property for ₹13,690.",
+      "how_found": "Compared suspicious candidates against verified listings. Extreme area alone was not sufficient because verified listings also showed low area-per-BHK values; price was the distinguishing outlier.",
+      "impact": "This listing is a strong candidate for a fake enquiry-generating listing.",
+      "evidence": [
+        "MAG-2002761"
+      ]
+    }
+  ]
+}
