@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { fetchAllPages } from '../api';
+import { Link } from 'react-router-dom';
 
 export default function Projects() {
   const { token } = useAuth();
@@ -96,19 +97,15 @@ export default function Projects() {
   const hasMore =
     visibleCount < filteredProjects.length;
 
-  if (!token) {
-    return (
-      <div
-        className="no-results"
-        style={{
-          textAlign: 'center',
-          padding: '4rem'
-        }}
-      >
-        Please <a href="/login">login</a> to browse projects.
-      </div>
-    );
-  }
+if (!token) {
+  return (
+    <div className="auth-required">
+      <p>
+        Please <Link to="/login">sign in</Link> to view projects.
+      </p>
+    </div>
+  );
+}
 
   return (
     <div

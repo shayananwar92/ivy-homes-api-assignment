@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import PropertyCard from './PropertyCard';
 import SearchFilterBar from './SearchFilterBar';
@@ -15,8 +16,7 @@ export default function SearchManager() {
   const [searchTerm, setSearchTerm] = useState('');
   const [bhkFilter, setBhkFilter] = useState('All');
   const [typeFilter, setTypeFilter] = useState('All');
-  const [priceMin, setPriceMin] = useState('');
-  const [priceMax, setPriceMax] = useState('');
+  const [priceRange, setPriceRange] = useState('All');
   const [furnishingFilter, setFurnishingFilter] = useState('All');
 
   useEffect(() => {
@@ -29,7 +29,7 @@ export default function SearchManager() {
 
     let cancelled = false;
 
-    async function loadListings() {
+    const loadListings = async () => {
       try {
         setLoading(true);
         setError('');
@@ -38,10 +38,7 @@ export default function SearchManager() {
 
         const uniqueListings = Array.from(
           new Map(
-            data.map(listing => [
-              listing.listing_id,
-              listing
-            ])
+            data.map((listing) => [listing.listing_id, listing])
           ).values()
         );
 
@@ -52,14 +49,14 @@ export default function SearchManager() {
       } catch (err) {
         if (!cancelled) {
           console.error('Failed to load listings:', err);
-          setError(err.message);
+          setError(err.message || 'Unable to load properties.');
         }
       } finally {
         if (!cancelled) {
           setLoading(false);
         }
       }
-    }
+    };
 
     loadListings();
 
@@ -68,52 +65,56 @@ export default function SearchManager() {
     };
   }, [token]);
 
+  useEffect(() => {
+    setVisibleCount(12);
+  }, [
+    searchTerm,
+    bhkFilter,
+    typeFilter,
+    priceRange,
+    furnishingFilter
+  ]);
+
   const filteredProperties = useMemo(() => {
-    return listings.filter(prop => {
-      const locality = String(
-        prop.locality || ''
-      ).toLowerCase();
+    const search = searchTerm.trim().toLowerCase();
+    const type = typeFilter.toLowerCase();
+    const furnishing = furnishingFilter.toLowerCase();
 
-      const propertyType = String(
-        prop.property_type || ''
-      ).toLowerCase();
+    const priceRanges = {
+      under50: { min: 0, max: 5000000 },
+      '50to100': { min: 5000000, max: 10000000 },
+      '100to200': { min: 10000000, max: 20000000 },
+      '200to500': { min: 20000000, max: 50000000 },
+      over500: { min: 50000000, max: Infinity }
+    };
 
-      const furnishing = String(
-        prop.furnishing || ''
-      ).toLowerCase();
+    const selectedRange = priceRanges[priceRange];
 
-      const matchesSearch =
-        locality.includes(searchTerm.toLowerCase());
+    return listings.filter((prop) => {
+      const locality = String(prop.locality || '').toLowerCase();
+      const propertyType = String(prop.property_type || '').toLowerCase();
+      const propertyFurnishing = String(prop.furnishing || '').toLowerCase();
+      const price = Number(prop.price);
 
-      const matchesBhk =
-        bhkFilter === 'All' ||
-        String(prop.bedroom) === bhkFilter;
-
-      const matchesType =
-        typeFilter === 'All' ||
-        propertyType === typeFilter.toLowerCase();
-
-      const matchesMinPrice =
-        priceMin === '' ||
-        Number(prop.price) >= Number(priceMin);
-
-      const matchesMaxPrice =
-        priceMax === '' ||
-        Number(prop.price) <= Number(priceMax);
-
-      const matchesFurnishing =
-        furnishingFilter === 'All' ||
-        furnishing === furnishingFilter.toLowerCase();
+      const matchesPrice =
+        priceRange === 'All' ||
+        (
+          selectedRange &&
+          price >= selectedRange.min &&
+          price < selectedRange.max
+        );
 
       return (
         prop.is_live === true &&
-        Number(prop.price) > 0 &&
-        matchesSearch &&
-        matchesBhk &&
-        matchesType &&
-        matchesMinPrice &&
-        matchesMaxPrice &&
-        matchesFurnishing
+        price > 0 &&
+        locality.includes(search) &&
+        (bhkFilter === 'All' ||
+          String(prop.bedroom) === bhkFilter) &&
+        (typeFilter === 'All' ||
+          propertyType === type) &&
+        matchesPrice &&
+        (furnishingFilter === 'All' ||
+          propertyFurnishing === furnishing)
       );
     });
   }, [
@@ -121,27 +122,19 @@ export default function SearchManager() {
     searchTerm,
     bhkFilter,
     typeFilter,
-    priceMin,
-    priceMax,
+    priceRange,
     furnishingFilter
   ]);
 
-  const visibleProperties =
-    filteredProperties.slice(0, visibleCount);
-
-  const hasMore =
-    visibleCount < filteredProperties.length;
+  const visibleProperties = filteredProperties.slice(0, visibleCount);
+  const hasMore = visibleCount < filteredProperties.length;
 
   if (!token) {
     return (
-      <div
-        className="no-results"
-        style={{
-          textAlign: 'center',
-          padding: '4rem'
-        }}
-      >
-        Please <a href="/login">login</a> to browse properties.
+      <div className="auth-required">
+        <p>
+          Please <Link to="/login">sign in</Link> to browse properties.
+        </p>
       </div>
     );
   }
@@ -149,13 +142,14 @@ export default function SearchManager() {
   return (
     <div className="search-manager">
       <div className="search-header">
-        <h2>Property Directory</h2>
-
-        <p>
-          {loading
-            ? 'Loading properties...'
-            : `Showing ${visibleProperties.length} of ${filteredProperties.length} results`}
-        </p>
+        <div>
+          <h2>Property Directory</h2>
+          <p>
+            {loading
+              ? 'Loading properties...'
+              : `${filteredProperties.length} properties found`}
+          </p>
+        </div>
       </div>
 
       <SearchFilterBar
@@ -165,74 +159,55 @@ export default function SearchManager() {
         setBhkFilter={setBhkFilter}
         typeFilter={typeFilter}
         setTypeFilter={setTypeFilter}
-        priceMin={priceMin}
-        setPriceMin={setPriceMin}
-        priceMax={priceMax}
-        setPriceMax={setPriceMax}
+        priceRange={priceRange}
+        setPriceRange={setPriceRange}
         furnishingFilter={furnishingFilter}
         setFurnishingFilter={setFurnishingFilter}
       />
 
       {loading && listings.length === 0 && (
-        <div className="no-results">
-          Loading properties...
-        </div>
+        <div className="no-results">Loading properties...</div>
       )}
 
       {error && (
-        <div className="no-results">
+        <div className="no-results search-error">
           Failed to load properties: {error}
         </div>
       )}
 
       {!loading && !error && (
         <>
-          <div className="property-grid">
-            {visibleProperties.length > 0 ? (
-              visibleProperties.map(prop => (
+          {visibleProperties.length > 0 ? (
+            <div className="property-grid">
+              {visibleProperties.map((property) => (
                 <PropertyCard
-                  key={prop.listing_id}
-                  property={prop}
+                  key={property.listing_id}
+                  property={property}
                 />
-              ))
-            ) : (
-              <div className="no-results">
-                No properties match your search criteria.
-              </div>
-            )}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="no-results">
+              No properties match your search criteria.
+            </div>
+          )}
 
           {hasMore && (
-            <div
-              style={{
-                textAlign: 'center',
-                padding: '2rem'
-              }}
-            >
+            <div className="load-more">
               <button
-                onClick={() =>
-                  setVisibleCount(
-                    count => count + 12
-                  )
-                }
                 className="accent-btn"
+                onClick={() => setVisibleCount((count) => count + 12)}
               >
                 Load More
               </button>
             </div>
           )}
 
-          {!hasMore &&
-            filteredProperties.length > 0 && (
-              <div
-                style={{
-                  textAlign: 'center',
-                  padding: '2rem'
-                }}
-              >
-                All properties loaded.
-              </div>
-            )}
+          {!hasMore && filteredProperties.length > 0 && (
+            <div className="load-more all-loaded">
+              All properties loaded.
+            </div>
+          )}
         </>
       )}
     </div>

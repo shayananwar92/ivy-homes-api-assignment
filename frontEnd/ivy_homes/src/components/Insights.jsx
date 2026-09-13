@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { fetchAllPages } from '../api';
+import { Link } from 'react-router-dom';
 
 export default function Insights() {
   const { token } = useAuth();
@@ -136,19 +137,15 @@ export default function Insights() {
     };
   }, [listings, rentals, projects]);
 
-  if (!token) {
-    return (
-      <div
-        className="no-results"
-        style={{
-          textAlign: 'center',
-          padding: '4rem'
-        }}
-      >
-        Please <a href="/login">login</a> to view insights.
-      </div>
-    );
-  }
+if (!token) {
+  return (
+    <div className="auth-required">
+      <p>
+        Please <Link to="/login">sign in</Link> to view insights.
+      </p>
+    </div>
+  );
+}
 
   if (loading) {
     return (

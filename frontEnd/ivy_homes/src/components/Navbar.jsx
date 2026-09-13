@@ -1,48 +1,55 @@
-import { Link } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
 
+  const navClass = ({ isActive }) =>
+    `nav-link ${isActive ? 'active' : ''}`;
+
   return (
     <nav className="navbar">
       <div className="nav-brand">
-        <Link to="/">Ivy Homes</Link>
+        <NavLink to="/" className={navClass} end>
+          Ivy Homes
+        </NavLink>
       </div>
 
       <div className="nav-links">
-        <Link to="/search">Directory</Link>
+        <NavLink to="/search" className={navClass}>
+          Directory
+        </NavLink>
 
-        <Link to="/rentals">Rentals</Link>
+        <NavLink to="/rentals" className={navClass}>
+          Rentals
+        </NavLink>
 
-        <Link to="/projects">Projects</Link>
+        <NavLink to="/projects" className={navClass}>
+          Projects
+        </NavLink>
 
-        <Link to="/insights">Insights</Link>
+        <NavLink to="/insights" className={navClass}>
+          Insights
+        </NavLink>
 
         {user && (
-          <Link to="/saved">Saved</Link>
+          <NavLink to="/saved" className={navClass}>
+            Saved
+          </NavLink>
         )}
 
         {user ? (
           <>
-            <span className="user-email">
-              {user}
-            </span>
+            <span className="user-email">{user}</span>
 
-            <button
-              onClick={logout}
-              className="accent-btn logout-btn"
-            >
+            <button onClick={logout} className="logout-btn">
               Logout
             </button>
           </>
         ) : (
-          <Link
-            to="/login"
-            className="accent-btn login-btn"
-          >
+          <NavLink to="/login" className="login-btn">
             Login
-          </Link>
+          </NavLink>
         )}
       </div>
     </nav>

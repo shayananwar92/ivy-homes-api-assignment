@@ -1,18 +1,30 @@
 import { useEffect, useState } from 'react';
 import { fetchAllPages } from '../api';
+import { useAuth } from '../context/AuthContext';
 import HeroStats from './HeroStats';
 import PremiumCollection from './PremiumCollection';
 
 export default function Home() {
+  const { token } = useAuth();
+
   const [listings, setListings] = useState([]);
   const [projects, setProjects] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    if (!token) {
+      setListings([]);
+      setProjects([]);
+      setLoading(false);
+      return;
+    }
+
     let cancelled = false;
 
-    async function loadHomeData() {
+    const loadHomeData = async () => {
       try {
+        setLoading(true);
+
         const [listingData, projectData] = await Promise.all([
           fetchAllPages('/v1/listings'),
           fetchAllPages('/v1/projects')
@@ -20,7 +32,7 @@ export default function Home() {
 
         const uniqueListings = Array.from(
           new Map(
-            listingData.map(listing => [
+            listingData.map((listing) => [
               listing.listing_id,
               listing
             ])
@@ -29,7 +41,7 @@ export default function Home() {
 
         const uniqueProjects = Array.from(
           new Map(
-            projectData.map(project => [
+            projectData.map((project) => [
               project.project_id,
               project
             ])
@@ -41,58 +53,42 @@ export default function Home() {
           setProjects(uniqueProjects);
         }
       } catch (error) {
-        console.error(
-          'Failed to load homepage data:',
-          error
-        );
+        console.error('Failed to load homepage data:', error);
       } finally {
         if (!cancelled) {
           setLoading(false);
         }
       }
-    }
+    };
 
     loadHomeData();
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [token]);
 
-  const getTopProperties = bhkCount => {
-    return listings
+  const getTopProperties = (bhk) =>
+    listings
       .filter(
-        property =>
+        (property) =>
           property.is_live === true &&
           Number(property.price) > 0 &&
-          Number(property.bedroom) === bhkCount
+          Number(property.bedroom) === bhk
       )
       .sort(
-        (a, b) =>
-          Number(b.price) - Number(a.price)
+        (a, b) => Number(b.price) - Number(a.price)
       )
       .slice(0, 3);
-  };
-
-  const top4BHK = getTopProperties(4);
-  const top3BHK = getTopProperties(3);
-  const top2BHK = getTopProperties(2);
 
   const activeCount = listings.filter(
-    listing => listing.is_live === true
+    (listing) =>
+      listing.is_live === true &&
+      Number(listing.price) > 0
   ).length;
 
   if (loading) {
-    return (
-      <div
-        style={{
-          textAlign: 'center',
-          padding: '4rem'
-        }}
-      >
-        Loading Ivy Homes...
-      </div>
-    );
+    return <div className="home-state">Loading Ivy Homes...</div>;
   }
 
   return (
@@ -101,22 +97,27 @@ export default function Home() {
         uniqueCount={listings.length}
         projectsCount={projects.length}
         activeCount={activeCount}
+        loggedIn={Boolean(token)}
       />
 
-      <PremiumCollection
-        title="Premium 4 BHK Estates"
-        properties={top4BHK}
-      />
+      {token && (
+        <>
+          <PremiumCollection
+            title="Premium 4 BHK Estates"
+            properties={getTopProperties(4)}
+          />
 
-      <PremiumCollection
-        title="Premium 3 BHK Residences"
-        properties={top3BHK}
-      />
+          <PremiumCollection
+            title="Premium 3 BHK Residences"
+            properties={getTopProperties(3)}
+          />
 
-      <PremiumCollection
-        title="Premium 2 BHK Apartments"
-        properties={top2BHK}
-      />
+          <PremiumCollection
+            title="Premium 2 BHK Apartments"
+            properties={getTopProperties(2)}
+          />
+        </>
+      )}
     </div>
   );
 }

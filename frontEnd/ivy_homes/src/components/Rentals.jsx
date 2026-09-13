@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { fetchAllPages } from '../api';
+import { Link } from 'react-router-dom';
 
 export default function Rentals() {
   const { token } = useAuth();
@@ -103,19 +104,15 @@ export default function Rentals() {
   const hasMore =
     visibleCount < filteredRentals.length;
 
-  if (!token) {
-    return (
-      <div
-        className="no-results"
-        style={{
-          textAlign: 'center',
-          padding: '4rem'
-        }}
-      >
-        Please <a href="/login">login</a> to browse rentals.
-      </div>
-    );
-  }
+if (!token) {
+  return (
+    <div className="auth-required">
+      <p>
+        Please <Link to="/login">sign in</Link> to view rentals.
+      </p>
+    </div>
+  );
+}
 
   return (
     <div
