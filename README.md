@@ -45,7 +45,7 @@ Create a `.env` file in the project root:
 
     VITE_IVY_API_KEY=your_api_key_here
 
-The API key should not be committed to the repository.
+Note: The `.env` file is gitignored and is not included in the repository. Create the `.env` file in `frontEnd/ivy_homes/` and add the provided Ivy Homes API key before running the project..
 
 ### 4. Start the development server
 
