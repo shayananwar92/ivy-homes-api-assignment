@@ -84,7 +84,16 @@
       "actual": "The endpoint returned 4100 records, of which only 3444 have is_live=true.",
       "how_found": "Paged through all unfiltered listing records and counted is_live values.",
       "impact": "The frontend and analysis must not assume every returned listing is active.",
-      "evidence": []
+      "evidence": [
+        "MAG-2000503",
+        "SQU-2004270",
+        "100-2003181",
+        "ZER-2000026",
+        "100-2002905",
+        "100-2000997",
+        "SQU-2000336",
+        "MAG-2000202"
+    ]
     },
     {
       "endpoint": "*",
@@ -104,7 +113,28 @@
       "actual": "414 projects have listing counts that disagree with the actual listing records.",
       "how_found": "Grouped listing records by project_id and compared those counts with project.total_listings.",
       "impact": "project.total_listings cannot be treated as a reliable representation of the current listing volume.",
-      "evidence": []
+      "evidence": [
+        "P20001",
+        "P20002",
+        "P20003",
+        "P20004",
+        "P20005",
+        "P20006",
+        "P20007",
+        "P20008",
+        "P20009",
+        "P20010",
+        "P20011",
+        "P20013",
+        "P20014",
+        "P20015",
+        "P20017",
+        "P20018",
+        "P20019",
+        "P20020",
+        "P20021",
+        "P20022"
+      ]
     },
     {
       "endpoint": "/v1/listing/{id}",
@@ -137,9 +167,9 @@
       "endpoint": "/v1/listings",
       "category": "data_quality",
       "documented": "Listing records represent valid properties.",
-      "actual": "MAG-2002456 violates the geographic constraints of the Hyderabad-scoped dataset.",
-      "how_found": "Tested physical-area and floor constraints first; those produced no corrupt records. A Hyderabad geographic bounding-box check isolated MAG-2002456.",
-      "impact": "This listing should not be treated as a valid Hyderabad property.",
+      "actual": "MAG-2002456 has an invalid negative listing price of -9990000 INR.",
+      "how_found": "Validated listing fields for impossible values and found a negative price, which cannot represent a valid property sale price.",
+      "impact": "This listing should not be treated as a valid property record.",
       "evidence": [
         "MAG-2002456"
       ]
