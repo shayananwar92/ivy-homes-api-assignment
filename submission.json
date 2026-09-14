@@ -23,7 +23,7 @@
     "fake_listing_ids": [
       "MAG-2002761"
     ],
-    "projects_with_wrong_listing_count": 414
+    "projects_with_wrong_listing_count": 46
   },
   "findings": [
     {
@@ -110,8 +110,8 @@
       "endpoint": "/v1/projects",
       "category": "consistency",
       "documented": "project.total_listings always agrees with the listings available for that project.",
-      "actual": "414 projects have listing counts that disagree with the actual listing records.",
-      "how_found": "Grouped listing records by project_id and compared those counts with project.total_listings.",
+      "actual": "46 distinct projects have listing counts that disagree with the actual listing records (414 repeated project records).",
+      "how_found": "Grouped listing records by project_id, compared those counts with project.total_listings, then deduplicated the project collection by project_id before counting mismatches.",
       "impact": "project.total_listings cannot be treated as a reliable representation of the current listing volume.",
       "evidence": [
         "P20001",

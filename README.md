@@ -530,7 +530,7 @@ I grouped listing records by `project_id` and compared those counts with `projec
 
 ### What I found
 
-The values disagreed for 414 projects.
+The values disagreed across 414 repeated project records, representing 46 distinct projects.
 
 ### Result
 
@@ -538,7 +538,7 @@ The documentation's consistency claim was false.
 
 ### Answer
 
-    414
+    46
 
 ### What I changed
 
@@ -673,7 +673,7 @@ The final answers used in `submission.json` are:
 | Costliest project `price_max` | 96.8 |
 | Listings from the last 7 days | 164 |
 | Fake listing IDs | `MAG-2002761` |
-| Projects with incorrect listing counts | 414 |
+| Projects with incorrect listing counts | 46 |
 
 The exact machine-readable answers and finding evidence are provided separately in `submission.json`.
 
