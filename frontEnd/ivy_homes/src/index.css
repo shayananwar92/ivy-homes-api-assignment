@@ -815,3 +815,96 @@ body {
 .auth-required a:hover {
   text-decoration: underline;
 }
+.saved-page {
+  padding: 2rem 0;
+}
+
+.property-card {
+  position: relative;
+}
+
+.property-card-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.save-btn {
+  width: 100%;
+  margin-top: 1rem;
+  padding: 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.save-btn:hover,
+.save-btn.saved {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.no-results a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.detail-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+}
+
+.detail-topbar .save-btn {
+  width: auto;
+  margin-top: 0;
+  padding: 0.6rem 1rem;
+}
+
+.detail-description {
+  margin-top: 2rem;
+}
+
+.property-card-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.save-btn {
+  width: 100%;
+  margin-top: 1rem;
+  padding: 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.save-btn:hover,
+.save-btn.saved {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.saved-page .property-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 900px) {
+  .saved-page .property-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .saved-page .property-grid {
+    grid-template-columns: 1fr;
+  }
+}

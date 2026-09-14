@@ -3,6 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import { fetchAllPages } from '../api';
 import { useAuth } from '../context/AuthContext';
 
+const getStorageKey = (user) => `ivy:favourites:${user}`;
+
 export default function ListingDetail() {
   const { id } = useParams();
   const { token, user } = useAuth();
@@ -10,17 +12,18 @@ export default function ListingDetail() {
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isSaved, setIsSaved] = useState(false);
 
   useEffect(() => {
-    if (!token) {
+    if (!token || !user) {
       setLoading(false);
-      setError('Please log in to view this listing.');
+      setError('Please sign in to view this listing.');
       return;
     }
 
     let cancelled = false;
 
-    async function loadListing() {
+    const loadListing = async () => {
       try {
         setLoading(true);
         setError('');
@@ -29,7 +32,7 @@ export default function ListingDetail() {
 
         const uniqueListings = Array.from(
           new Map(
-            listings.map(listing => [
+            listings.map((listing) => [
               listing.listing_id,
               listing
             ])
@@ -37,49 +40,74 @@ export default function ListingDetail() {
         );
 
         const found = uniqueListings.find(
-          listing => listing.listing_id === id
+          (listing) => listing.listing_id === id
         );
 
         if (!found) {
           throw new Error('Listing not found.');
         }
 
+        const saved = JSON.parse(
+          localStorage.getItem(getStorageKey(user)) || '[]'
+        );
+
         if (!cancelled) {
           setProperty(found);
+          setIsSaved(saved.includes(id));
         }
       } catch (err) {
         if (!cancelled) {
           console.error('Failed to load listing:', err);
           setProperty(null);
-          setError(err.message);
+          setError(err.message || 'Unable to load listing.');
         }
       } finally {
         if (!cancelled) {
           setLoading(false);
         }
       }
-    }
+    };
 
     loadListing();
 
     return () => {
       cancelled = true;
     };
-  }, [id, token]);
+  }, [id, token, user]);
+
+  const toggleSave = () => {
+    if (!user) return;
+
+    try {
+      const key = getStorageKey(user);
+      const saved = JSON.parse(
+        localStorage.getItem(key) || '[]'
+      );
+
+      const updated = saved.includes(id)
+        ? saved.filter((listingId) => listingId !== id)
+        : [...saved, id];
+
+      localStorage.setItem(key, JSON.stringify(updated));
+      setIsSaved(updated.includes(id));
+    } catch (err) {
+      console.error('Failed to update saved property:', err);
+    }
+  };
 
   if (!user) {
     return (
-      <div style={{ textAlign: 'center', padding: '4rem' }}>
-        <h2>
-          Please <Link to="/login">login</Link> to view this property.
-        </h2>
+      <div className="auth-required">
+        <p>
+          Please <Link to="/login">sign in</Link> to view this property.
+        </p>
       </div>
     );
   }
 
   if (loading) {
     return (
-      <div style={{ textAlign: 'center', padding: '4rem' }}>
+      <div className="no-results">
         Loading property...
       </div>
     );
@@ -87,10 +115,10 @@ export default function ListingDetail() {
 
   if (error || !property) {
     return (
-      <div style={{ textAlign: 'center', padding: '4rem' }}>
+      <div className="no-results">
         <h2>Property Not Found</h2>
         {error && <p>{error}</p>}
-        <p style={{ marginTop: '1rem' }}>
+        <p>
           <Link to="/search">← Back to Search</Link>
         </p>
       </div>
@@ -99,27 +127,17 @@ export default function ListingDetail() {
 
   return (
     <div className="listing-detail-page">
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '2rem'
-        }}
-      >
-        <Link
-          to="/search"
-          className="back-link"
-          style={{ marginBottom: 0 }}
-        >
+      <div className="detail-topbar">
+        <Link to="/search" className="back-link">
           ← Back to Search
         </Link>
 
-        {user && (
-          <button className="accent-btn">
-            ☆ Save Property
-          </button>
-        )}
+        <button
+          className={`save-btn ${isSaved ? 'saved' : ''}`}
+          onClick={toggleSave}
+        >
+          {isSaved ? '★ Saved' : '☆ Save Property'}
+        </button>
       </div>
 
       <div className="detail-header">
@@ -142,43 +160,40 @@ export default function ListingDetail() {
 
           <ul>
             <li>
-              <strong>Carpet Area:</strong>{' '}
-              {property.carpet_area} sqft
+              <strong>Carpet Area:</strong>
+              <span>{property.carpet_area} sqft</span>
             </li>
-
             <li>
-              <strong>Super Built-up Area:</strong>{' '}
-              {property.super_built_up_area} sqft
+              <strong>Super Built-up Area:</strong>
+              <span>{property.super_built_up_area} sqft</span>
             </li>
-
             <li>
-              <strong>Furnishing:</strong>{' '}
-              {property.furnishing || 'Unspecified'}
+              <strong>Furnishing:</strong>
+              <span>{property.furnishing || 'Unspecified'}</span>
             </li>
-
             <li>
-              <strong>Bathrooms:</strong>{' '}
-              {property.bathroom}
+              <strong>Bathrooms:</strong>
+              <span>{property.bathroom}</span>
             </li>
-
             <li>
-              <strong>Balcony:</strong>{' '}
-              {property.balcony ?? 'Unspecified'}
+              <strong>Balcony:</strong>
+              <span>{property.balcony ?? 'Unspecified'}</span>
             </li>
-
             <li>
-              <strong>Floor:</strong>{' '}
-              {property.floor} out of {property.total_floors}
+              <strong>Floor:</strong>
+              <span>
+                {property.floor} out of {property.total_floors}
+              </span>
             </li>
-
             <li>
-              <strong>Facing:</strong>{' '}
-              {property.facing_direction || 'Unspecified'}
+              <strong>Facing:</strong>
+              <span>
+                {property.facing_direction || 'Unspecified'}
+              </span>
             </li>
-
             <li>
-              <strong>Parking:</strong>{' '}
-              {property.covered_parking ?? 0}
+              <strong>Parking:</strong>
+              <span>{property.covered_parking ?? 0}</span>
             </li>
           </ul>
         </div>
@@ -188,50 +203,45 @@ export default function ListingDetail() {
 
           <ul>
             <li>
-              <strong>Listing ID:</strong>{' '}
-              {property.listing_id}
+              <strong>Listing ID:</strong>
+              <span>{property.listing_id}</span>
             </li>
-
             <li>
-              <strong>Project ID:</strong>{' '}
-              {property.project_id || 'Standalone'}
+              <strong>Project ID:</strong>
+              <span>{property.project_id || 'Standalone'}</span>
             </li>
-
             <li>
-              <strong>Status:</strong>{' '}
-              {property.is_live ? 'Live' : 'Offline'}
+              <strong>Status:</strong>
+              <span>{property.is_live ? 'Live' : 'Offline'}</span>
             </li>
-
             <li>
-              <strong>Verified:</strong>{' '}
-              {property.is_verified ? 'Yes' : 'No'}
+              <strong>Verified:</strong>
+              <span>{property.is_verified ? 'Yes' : 'No'}</span>
             </li>
-
             <li>
-              <strong>Posted By:</strong>{' '}
-              {property.posted_by || 'Unspecified'}
+              <strong>Posted By:</strong>
+              <span>{property.posted_by || 'Unspecified'}</span>
             </li>
-
             <li>
-              <strong>Posted On:</strong>{' '}
-              {property.posted_at
-                ? new Date(property.posted_at).toLocaleDateString()
-                : 'Unspecified'}
+              <strong>Posted On:</strong>
+              <span>
+                {property.posted_at
+                  ? new Date(property.posted_at).toLocaleDateString()
+                  : 'Unspecified'}
+              </span>
             </li>
-
             <li>
-              <strong>Coordinates:</strong>{' '}
-              {property.latitude}, {property.longitude}
+              <strong>Coordinates:</strong>
+              <span>
+                {property.latitude}, {property.longitude}
+              </span>
             </li>
           </ul>
         </div>
       </div>
 
       {property.description && (
-        <div
-          className="detail-card"
-          style={{ marginTop: '2rem' }}
-        >
+        <div className="detail-card detail-description">
           <h3>Description</h3>
           <p>{property.description}</p>
         </div>
